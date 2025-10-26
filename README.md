@@ -33,4 +33,12 @@
 ### Сборка проекта
 На этапе 1 проект не требует сборки, так как это Python-скрипт, работающий в стандартной среде Python 3.x. Для запуска требуется только Python (версия 3.6 или выше).
 
+## Примеры использования
+
+<img width="1537" height="183" alt="image" src="https://github.com/user-attachments/assets/2d7b6d80-8e4e-4870-a735-67a0b1411068" />
+
+<img width="1296" height="77" alt="image" src="https://github.com/user-attachments/assets/08a68b8d-1fe8-47e3-9d36-272ddbeca945" />
+
+
+
 
