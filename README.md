@@ -31,17 +31,14 @@
 
 ```bash
 # Запуск Этапа 3 (тестовый режим)
-python script3.py \
-  --package A \
-  --repository test_graph.txt \
-  --repo-mode local \
-  --depth 3 
+python script3.py --package A --repository test_graph.txt --repo-mode local --depth 3 
 ```
 ## 4. Примеры использования
 
 <img width="1122" height="288" alt="image" src="https://github.com/user-attachments/assets/1e51995a-0ee2-4808-a508-15a740b92842" />
 <img width="1128" height="348" alt="image" src="https://github.com/user-attachments/assets/404a9c42-c941-4695-9e3e-6987c576da6b" />
 <img width="1133" height="343" alt="image" src="https://github.com/user-attachments/assets/172126d9-f972-4323-a742-cb524f77914b" />
+
 
 
 
