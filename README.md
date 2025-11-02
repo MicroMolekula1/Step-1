@@ -30,6 +30,11 @@
 - `validate_depth`: Проверяет, что глубина — положительное число.
 
 ## Команды для сборки проекта и запуска тестов
+
+python script1.py --package requests --repository test_graph.txt --repo-mode local --ascii --depth 3
+python script1.py --package flask --repository https://pypi.org/pypi --repo-mode remote --version 2.0.1 --output graph.svg
+python script1.py --package A --repository test_graph.txt --version 1.2 --repo-mode local
+
 ### Сборка проекта
 На этапе 1 проект не требует сборки, так как это Python-скрипт, работающий в стандартной среде Python 3.x. Для запуска требуется только Python (версия 3.6 или выше).
 
@@ -38,6 +43,7 @@
 <img width="1537" height="183" alt="image" src="https://github.com/user-attachments/assets/2d7b6d80-8e4e-4870-a735-67a0b1411068" />
 
 <img width="1296" height="77" alt="image" src="https://github.com/user-attachments/assets/08a68b8d-1fe8-47e3-9d36-272ddbeca945" />
+
 
 
 
