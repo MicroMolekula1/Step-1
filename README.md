@@ -68,13 +68,14 @@ git clone <repository_url>
 cd <project_directory>
 
 # Запуск скрипта
-python script.py --package requests --version 2.25.1 --repository https://pypi.org/pypi --repo-mode remote
+python script1.py --package requests --version 2.25.1 --repository https://pypi.org/pypi --repo-mode remote
 
 ## 4. Примеры использования.
 
 <img width="1591" height="379" alt="image" src="https://github.com/user-attachments/assets/dbad10bd-3fb2-4c2a-9761-d44a7826bf81" />
 
 <img width="1448" height="232" alt="image" src="https://github.com/user-attachments/assets/4ad405d2-3099-4dcb-bb33-e42efb21b390" />
+
 
 
 
