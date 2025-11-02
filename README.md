@@ -69,8 +69,11 @@ cd <project_directory>
 
 # Запуск скрипта
 python script1.py --package requests --version 2.25.1 --repository https://pypi.org/pypi --repo-mode remote
+
 python script2.py --package pytest --version 6.2.4 --repository https://pypi.org/pypi --repo-mode remote --depth 2
+
 python script2.py --package django --version 3.2.1 --repository https://pypi.org/pypi --repo-mode remote --depth 1
+
 python script2.py --package flask --version 2.0.1 --repository https://pypi.org/pypi --repo-mode remote --depth 2
 
 ## 4. Примеры использования.
@@ -78,6 +81,7 @@ python script2.py --package flask --version 2.0.1 --repository https://pypi.org/
 <img width="1591" height="379" alt="image" src="https://github.com/user-attachments/assets/dbad10bd-3fb2-4c2a-9761-d44a7826bf81" />
 
 <img width="1448" height="232" alt="image" src="https://github.com/user-attachments/assets/4ad405d2-3099-4dcb-bb33-e42efb21b390" />
+
 
 
 
