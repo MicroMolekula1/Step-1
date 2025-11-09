@@ -8,11 +8,13 @@ from urllib.parse import urlparse
 from urllib.error import URLError, HTTPError
 from collections import defaultdict
 
+
 def validate_package_name(package_name):
     """Проверка, что имя пакета не пустое."""
     if not package_name or package_name.strip() == "":
         raise ValueError("Имя пакета не может быть пустым")
     return package_name.strip()
+
 
 def validate_repository(repository):
     """Проверка URL или пути к файлу."""
@@ -25,6 +27,7 @@ def validate_repository(repository):
             raise ValueError(f"Файл или директория {repository} не существует")
     return repository
 
+
 def validate_repo_mode(mode):
     """Проверка режима работы с репозиторием."""
     valid_modes = ["local", "remote"]
@@ -32,11 +35,13 @@ def validate_repo_mode(mode):
         raise ValueError(f"Недопустимый режим: {mode}. Доступные режимы: {valid_modes}")
     return mode
 
+
 def validate_version(version):
     """Проверка версии пакета (например, 1.2.3)."""
     if not re.match(r"^\d+\.\d+\.\d+$", version):
         raise ValueError("Некорректный формат версии пакета (ожидается X.Y.Z)")
     return version
+
 
 def validate_output_file(filename):
     """Проверка имени выходного файла."""
@@ -44,6 +49,7 @@ def validate_output_file(filename):
     if not any(filename.endswith(ext) for ext in valid_extensions):
         raise ValueError(f"Имя файла должно иметь расширение: {valid_extensions}")
     return filename
+
 
 def validate_depth(depth):
     """Проверка максимальной глубины анализа."""
@@ -55,8 +61,9 @@ def validate_depth(depth):
     except ValueError:
         raise ValueError("Максимальная глубина должна быть числом")
 
+
 def get_package_dependencies(package_name, version, repository):
-    """ Получает прямые зависимости пакета из PyPI. """
+    """Получает прямые зависимости пакета из PyPI."""
     try:
         base_url = repository.rstrip('/')
         url = f"{base_url}/{package_name}/{version}/json"
@@ -64,6 +71,8 @@ def get_package_dependencies(package_name, version, repository):
             data = json.loads(response.read().decode('utf-8'))
         info = data.get('info', {})
         requires_dist = info.get('requires_dist', [])
+        if requires_dist is None:
+            requires_dist = []
         clean_dependencies = []
         for dep in requires_dist:
             clean_dep = re.split(r'[;<>!=()]', dep)[0].strip()
@@ -72,12 +81,9 @@ def get_package_dependencies(package_name, version, repository):
         return clean_dependencies
     except HTTPError as e:
         raise Exception(f"Ошибка HTTP {e.code}: {e.reason}")
-    except URLError as e:
-        raise Exception(f"Ошибка URL: {e.reason}")
-    except json.JSONDecodeError:
-        raise Exception("Ошибка декодирования JSON ответа")
-    except KeyError:
-        raise Exception("Некорректная структура JSON ответа")
+    except Exception as e:
+        raise Exception(f"Ошибка получения зависимостей {package_name}: {e}")
+
 
 def get_latest_version(package_name, repository):
     """Получает последнюю версию пакета из PyPI."""
@@ -89,6 +95,7 @@ def get_latest_version(package_name, repository):
         return data['info']['version']
     except Exception as e:
         raise Exception(f"Ошибка при получении версии пакета {package_name}: {e}")
+
 
 def load_graph_from_file(file_path):
     """Загружает граф зависимостей из файла."""
@@ -103,10 +110,51 @@ def load_graph_from_file(file_path):
                 graph[pkg] = deps
     return graph
 
+
+def build_graph_from_pypi(package, repository, version, depth):
+    """Строит граф зависимостей из PyPI (прямые + транзитивные до глубины)."""
+    graph = defaultdict(list)
+    cache = {}
+
+    def get_deps(pkg):
+        if pkg in cache:
+            return cache[pkg]
+        pkg_ver = version if pkg == package else get_latest_version(pkg, repository)
+        deps = get_package_dependencies(pkg, pkg_ver, repository)
+        cache[pkg] = deps
+        return deps
+
+    # DFS для построения графа (используем тот же алгоритм)
+    stack = [(package, 0, [package])]
+    visited = set()
+
+    while stack:
+        pkg, dep, path = stack.pop()
+        if pkg in visited:
+            continue
+        visited.add(pkg)
+        if dep >= depth:
+            continue
+        deps = get_deps(pkg)
+        graph[pkg] = deps
+        for d in deps:
+            if d not in path:  # Избежать циклов в построении
+                stack.append((d, dep + 1, path + [d]))
+
+    return dict(graph)
+
+
+def build_reverse_graph(graph):
+    """Строит обратный граф."""
+    reverse_graph = defaultdict(list)
+    for pkg, deps in graph.items():
+        for dep in deps:
+            reverse_graph[dep].append(pkg)
+    return dict(reverse_graph)
+
+
 def get_transitive_dependencies(start_pkg, get_deps, max_depth):
-    """Получает транзитивные зависимости с использованием DFS без рекурсии.
-    Returns: set зависимостей, bool cycle_detected
-    """
+    """DFS без рекурсии для транзитивных/обратных зависимостей."""
     stack = [(start_pkg, 0, [start_pkg])]
     visited = set()
     dependencies = set()
@@ -134,27 +182,36 @@ def get_transitive_dependencies(start_pkg, get_deps, max_depth):
 
     return dependencies, cycle_detected
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Инструмент визуализации графа зависимостей")
+    parser = argparse.ArgumentParser(description="Этап 4: Обратные зависимости (local/remote)")
     parser.add_argument("--package", required=True, help="Имя анализируемого пакета")
     parser.add_argument("--repository", required=True, help="URL репозитория или путь к файлу")
-    parser.add_argument("--repo-mode", default="remote", help="Режим работы с репозиторием (local/remote)")
-    parser.add_argument("--version", default="1.0.0", help="Версия пакета (X.Y.Z)")
+    parser.add_argument("--repo-mode", default="remote", help="Режим работы (local/remote)")
+    parser.add_argument("--version", default="latest", help="Версия пакета (X.Y.Z или 'latest')")
     parser.add_argument("--output", default="graph.png", help="Имя файла с изображением графа")
     parser.add_argument("--ascii", action="store_true", help="Вывод зависимостей в ASCII")
-    parser.add_argument("--depth", default=1, type=int, help="Максимальная глубина анализа зависимостей")
-    parser.add_argument("--reverse", action="store_true", help="Вывод обратных зависимостей")
+    parser.add_argument("--depth", default=2, type=int, help="Максимальная глубина анализа")
+    parser.add_argument("--reverse", action="store_true", help="Включить режим обратных зависимостей")
 
     try:
         args = parser.parse_args()
         package = validate_package_name(args.package)
         repository = validate_repository(args.repository)
         repo_mode = validate_repo_mode(args.repo_mode)
-        version = validate_version(args.version)
         output = validate_output_file(args.output)
         depth = validate_depth(args.depth)
         ascii_mode = args.ascii
-        reverse = args.reverse
+        reverse_mode = args.reverse
+
+        # Версия
+        if args.version == "latest":
+            if repo_mode == "remote":
+                version = get_latest_version(package, repository)
+            else:
+                version = "1.0.0"  # Для local
+        else:
+            version = validate_version(args.version)
 
         params = {
             "package": package,
@@ -164,50 +221,61 @@ def main():
             "output": output,
             "ascii_mode": ascii_mode,
             "depth": depth,
-            "reverse": reverse
+            "reverse_mode": reverse_mode
         }
         print("Настраиваемые параметры:")
         for key, value in params.items():
             print(f"{key}: {value}")
         print("\n" + "=" * 50)
 
-        if reverse:
-            if repo_mode != "local":
-                raise ValueError("Режим обратных зависимостей поддерживается только в local режиме.")
+        if repo_mode == "local":
             graph = load_graph_from_file(repository)
-            reverse_graph = defaultdict(list)
-            for p, ds in graph.items():
-                for d in ds:
-                    reverse_graph[d].append(p)
-            def get_deps(pkg):
-                return reverse_graph[pkg]
-            print(f"Получение обратных транзитивных зависимостей для пакета {package}...")
-        else:
-            if repo_mode == "remote":
-                cache = {}
-                def get_deps(pkg):
-                    if pkg in cache:
-                        return cache[pkg]
-                    ver = version if pkg == package else get_latest_version(pkg, repository)
-                    deps = get_package_dependencies(pkg, ver, repository)
-                    cache[pkg] = deps
-                    return deps
-            else:
-                graph = load_graph_from_file(repository)
-                def get_deps(pkg):
-                    return graph.get(pkg, [])
-            print(f"Получение транзитивных зависимостей для пакета {package}...")
+            if not graph:
+                raise Exception("Граф зависимостей не существует или пустой")
+            if package not in graph and not reverse_mode:
+                raise Exception(f"Пакет {package} не найден в графе")
 
-        trans_deps, cycle = get_transitive_dependencies(package, get_deps, depth)
-        if cycle:
-            print("Обнаружена циклическая зависимость!")
-        if trans_deps:
-            prefix = "Обратные транзитивные" if reverse else "Транзитивные"
-            print(f"\n{prefix} зависимости пакета {package}:")
-            for i, dep in enumerate(sorted(trans_deps), 1):
-                print(f"{i}. {dep}")
+            def get_deps(pkg):
+                return graph.get(pkg, [])
+        else:  # remote
+            print(f"Построение графа из PyPI для {package}...")
+            graph = build_graph_from_pypi(package, repository, version, depth)
+            if not graph:
+                raise Exception(f"Не удалось построить граф для {package}")
+
+            def get_deps(pkg):
+                return graph.get(pkg, [])
+
+        # Для reverse — строим обратный граф
+        if reverse_mode:
+            reverse_graph = build_reverse_graph(graph)
+
+            def get_deps_reverse(pkg):
+                return reverse_graph.get(pkg, [])
+
+            print(f"Получение обратных зависимостей от пакета {package}...")
+            rev_deps, cycle = get_transitive_dependencies(package, get_deps_reverse, depth)
+            prefix = "Обратные"
+            if cycle:
+                print("Обнаружена циклическая зависимость!")
+            if rev_deps:
+                print(f"\n{prefix} зависимости от {package}:")
+                for i, dep in enumerate(sorted(rev_deps), 1):
+                    print(f"{i}. {dep}")
+            else:
+                raise Exception(f"От пакета {package} никто не зависит на заданной глубине")
         else:
-            print(f"\nПакет {package} не имеет { 'обратных' if reverse else '' } транзитивных зависимостей на заданной глубине.")
+            print(f"Получение транзитивных зависимостей для пакета {package}...")
+            trans_deps, cycle = get_transitive_dependencies(package, get_deps, depth)
+            prefix = "Транзитивные"
+            if cycle:
+                print("Обнаружена циклическая зависимость!")
+            if trans_deps:
+                print(f"\n{prefix} зависимости пакета {package}:")
+                for i, dep in enumerate(sorted(trans_deps), 1):
+                    print(f"{i}. {dep}")
+            else:
+                raise Exception(f"Пакет {package} не имеет зависимостей на заданной глубине")
 
     except ValueError as e:
         print(f"Ошибка валидации: {e}")
@@ -215,6 +283,7 @@ def main():
     except Exception as e:
         print(f"Ошибка: {e}")
         return
+
 
 if __name__ == "__main__":
     main()
