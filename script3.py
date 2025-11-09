@@ -70,6 +70,8 @@ def get_package_dependencies(package_name, version, repository):
             data = json.loads(response.read().decode('utf-8'))
         info = data.get('info', {})
         requires_dist = info.get('requires_dist', [])
+        if requires_dist is None:
+            requires_dist = []  # Защита от None
         clean_dependencies = []
         for dep in requires_dist:
             clean_dep = re.split(r'[;<>!=()]', dep)[0].strip()
@@ -113,18 +115,17 @@ def get_transitive_dependencies(start_pkg, get_deps, max_depth):
     """Получает транзитивные зависимости с использованием DFS без рекурсии.
     Returns: set зависимостей, bool cycle_detected
     """
-    stack = [(start_pkg, 0, [start_pkg])] # реализация DFS через стек.
+    stack = [(start_pkg, 0, [start_pkg])]  # реализация DFS через стек.
     visited = set()
     dependencies = set()
     cycle_detected = False
-    sub_graph = {}
 
     while stack:
         pkg, depth, path = stack.pop()
         if pkg in visited:
             continue
         visited.add(pkg)
-        if depth >= max_depth: #  УЧЁТ ГЛУБИНЫ.
+        if depth >= max_depth:  # УЧЁТ ГЛУБИНЫ.
             continue
         try:
             deps = get_deps(pkg)
@@ -132,12 +133,12 @@ def get_transitive_dependencies(start_pkg, get_deps, max_depth):
             print(f"Ошибка при получении зависимостей для {pkg}: {e}")
             continue
         for dep in deps:
-            if dep in path: # ОБНАРУЖЕНИЕ ЦИКЛА.
+            if dep in path:  # ОБНАРУЖЕНИЕ ЦИКЛА.
                 cycle_detected = True
-                continue  # ОБРАБОТКА ЦИКЛА, не добавляем в стек, чтобы избежать зацикливания, не идём дальше по циклу, продолжаем собирать остальные зависимости.
+                continue  # ОБРАБОТКА ЦИКЛА, не добавляем в стек.
             dependencies.add(dep)
             new_path = path + [dep]
-            stack.append((dep, depth + 1, new_path)) #  DFS БЕЗ РЕКУРСИИ, добавление в стек.
+            stack.append((dep, depth + 1, new_path))  # DFS БЕЗ РЕКУРСИИ.
 
     return dependencies, cycle_detected
 
@@ -185,7 +186,11 @@ def main():
                 cache[pkg] = deps
                 return deps
         else:  # local
-            graph = load_graph_from_file(repository)
+            graph = load_graph_from_file(repository) ## Граф в памяти
+            if not graph:
+                raise Exception("Граф зависимостей не существует или пустой")
+            if package not in graph:
+                raise Exception(f"Пакет {package} не найден в графе зависимостей")
             def get_deps(pkg):
                 return graph.get(pkg, [])
 
@@ -198,7 +203,7 @@ def main():
             for i, dep in enumerate(sorted(trans_deps), 1):
                 print(f"{i}. {dep}")
         else:
-            print(f"\nПакет {package} не имеет транзитивных зависимостей на заданной глубине.")
+            raise Exception(f"Пакет {package} не имеет зависимостей на заданной глубине")
 
     except ValueError as e:
         print(f"Ошибка валидации: {e}")
