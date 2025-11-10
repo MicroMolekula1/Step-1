@@ -44,14 +44,14 @@
 > Проект на Python — **сборка не требуется**. Запуск через `python`.
 
 ```bash
-# 1. Прямые зависимости (как в Этапе 3)
-python script4.py --file test_graph.txt --package A --depth 2
+# 1. Прямые зависимости
+python script4.py --repository test_graph.txt --package requests --depth 3 --repo-mode local
 
-# 2. Обратные зависимости
-python script4.py --file test_graph.txt --package D --reverse
+# 2. Обратные зависимости с циклом
+python script4.py --package requests --repository https://pypi.org/pypi --repo-mode remote --version 2.32.3 --depth 3 --reverse
 
-# 3. Обратные + ограничение глубины
-python script4.py --file test_graph.txt --package E --reverse --depth 2
+# 3. Обратные зависимости с циклом
+python script4.py --repository test_graph1.txt --package A --depth 4 --repo-mode local
 
 ```
 ## 4. Примеры использования
@@ -59,6 +59,7 @@ python script4.py --file test_graph.txt --package E --reverse --depth 2
 <img width="1125" height="314" alt="image" src="https://github.com/user-attachments/assets/da08f826-d97a-4283-a1a5-c6e7087ed7bd" />
 <img width="1207" height="286" alt="image" src="https://github.com/user-attachments/assets/87854727-8288-4486-82ba-ef3b037aaf90" />
 <img width="1213" height="326" alt="image" src="https://github.com/user-attachments/assets/6ac04fe5-7571-4cf3-a899-597944ab5cb2" />
+
 
 
 
