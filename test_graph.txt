@@ -1,7 +1,5 @@
-A: B C
-B: D
-C: D E
-D:
-E: A
-F: G
-G:
+requests: charset-normalizer idna urllib3 certifi
+charset-normalizer:
+idna:
+urllib3: idna
+certifi:
