@@ -54,11 +54,23 @@
 ### Установка зависимостей:
 
 ```bash
-# Установка D2 CLI (требуется Go)
-go install oss.terrastruct.com/d2@latest
+python script5.py --package requests --repository https://pypi.org/pypi --repo-mode remote --version latest --depth 1 --output requests.png --ascii
 
-# Установка pipdeptree для сравнения (опционально)
-pip install pipdeptree
+python script5.py --package matplotlib --repository https://pypi.org/pypi --repo-mode remote --version latest --depth 2 --output mpl.png
+
+python script5.py --package idna --repository test_graph.txt --repo-mode local --depth 3 --output diagram.png --ascii
+```
+
+## 4. Результаты тестирования
+
+<img width="587" height="515" alt="image" src="https://github.com/user-attachments/assets/5d676e83-1381-4ec6-b8a2-b1273c040154" />
+
+<img width="1562" height="334" alt="image" src="https://github.com/user-attachments/assets/b21375b9-596e-4fd9-9d08-5193908017e3" />
+
+<img width="1730" height="580" alt="image" src="https://github.com/user-attachments/assets/3e448231-bc2a-464c-9b42-7556828f3603" />
+
+
+
 
 
 
